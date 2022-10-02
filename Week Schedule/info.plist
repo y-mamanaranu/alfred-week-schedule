@@ -1,0 +1,371 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>bundleid</key>
+	<string>com.github.y-muen.alfred-week-schedule</string>
+	<key>category</key>
+	<string>Tools</string>
+	<key>connections</key>
+	<dict>
+		<key>123CBEDB-FD84-4A54-BFDD-1FADA19FD1D2</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>5F7B4B9A-3E11-4AFB-B7CF-6F2DC1085A26</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>1F226EB1-9906-4763-8A40-0CCCF3B903C2</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>BC63B914-E95E-466E-99C6-2973C00B3891</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>49696EE5-7229-4844-A1D1-7364A4792561</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>A54A4278-C584-4074-A2B1-1D1C092D7147</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>A54A4278-C584-4074-A2B1-1D1C092D7147</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>5F7B4B9A-3E11-4AFB-B7CF-6F2DC1085A26</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>BC63B914-E95E-466E-99C6-2973C00B3891</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>5F7B4B9A-3E11-4AFB-B7CF-6F2DC1085A26</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+	</dict>
+	<key>createdby</key>
+	<string>Yoiduki &lt;y-muen&gt;</string>
+	<key>description</key>
+	<string>Create Week Schedule Text and Copy to clipborad</string>
+	<key>disabled</key>
+	<false/>
+	<key>name</key>
+	<string>Week Schedule</string>
+	<key>objects</key>
+	<array>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>argumenttype</key>
+				<integer>1</integer>
+				<key>keyword</key>
+				<string>week</string>
+				<key>subtext</key>
+				<string></string>
+				<key>text</key>
+				<string>Create Week Schedule</string>
+				<key>withspace</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.keyword</string>
+			<key>uid</key>
+			<string>123CBEDB-FD84-4A54-BFDD-1FADA19FD1D2</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
+				<integer>68</integer>
+				<key>script</key>
+				<string>from datetime import date
+import datetime
+import AppKit
+import Foundation
+import sys
+
+def week_to_iso(year, week):
+    return week + int(date.fromisocalendar(year, 1, 1).day == 1)
+
+def iso_to_week(year, week_iso):
+    return week_iso - int(date.fromisocalendar(year, 1, 1).day == 1)
+    
+def iter_week(year, week, reverse:bool=False):
+    week_iso = week_to_iso(year, week)
+    
+    if reverse:
+        for i in range(6,0,-1):
+            yield date.fromisocalendar(year, week_iso, i)
+            
+        yield date.fromisocalendar(year, week_iso-1, 7)
+    else:
+        yield date.fromisocalendar(year, week_iso-1, 7)
+
+        for i in range(1,7):
+            yield date.fromisocalendar(year, week_iso, i)
+            
+def get_week(year:int, week:int, with_days:bool=False):
+    week_iso = week_to_iso(year,week)
+
+    day1 = date.fromisocalendar(year, week_iso-1, 7)
+    day7 = date.fromisocalendar(year, week_iso, 6)
+    
+    res = [f"{year}年{week}週 {day1:%m}/{day1:%d}-{day7:%m}/{day7:%d}"]
+    
+    if with_days:
+        for day in iter_week(year, week, reverse=True):
+            res.append(f"{day:%Y/%m/%d %a}")
+    
+    return res
+
+def get_this_week(with_days:bool=False):  
+    today = date.today().isocalendar()
+    year = today.year
+    week_iso = today.week + int(today.weekday == 7)
+    
+    week = iso_to_week(year, week_iso)
+    
+    return get_week(year, week, with_days=with_days)
+
+def get_last_week(with_days:bool=False):  
+    today = date.today().isocalendar()
+    year = today.year
+    week_iso = today.week - 1 + int(today.weekday == 7)
+    
+    week = iso_to_week(year, week_iso)
+    
+    return get_week(year, week, with_days=with_days)
+
+def get_next_week(with_days:bool=False):  
+    today = date.today().isocalendar()
+    year = today.year
+    week_iso = today.week + 1 + int(today.weekday == 7)
+    
+    week = iso_to_week(year, week_iso)
+    
+    return get_week(year, week, with_days=with_days)
+
+def copy(plain, html):
+    data = {
+        'public.utf8-plain-text': plain,
+        'public.html': html
+    }
+    pb = AppKit.NSPasteboard.generalPasteboard()
+    # クリップボードの内容をクリアする
+    pb.clearContents()
+    pb.declareTypes_owner_(data.keys(), None)
+
+    for fmt, value in data.items():
+        # 内容をエンコードする
+        new_data = Foundation.NSString.stringWithString_(
+            value
+        ).nsstring(
+        ).dataUsingEncoding_(
+            Foundation.NSUTF8StringEncoding
+        )
+        # クリップボードへ値をセットする
+        pb.setData_forType_(new_data, fmt)
+
+method = get_this_week
+if len(sys.argv) &gt; 1:
+	query = sys.argv[1]
+
+	if query == "last":
+		method = get_last_week
+	elif query == "next":
+		method = get_next_week
+	
+normal = None
+rich = None
+for line in method(with_days=True):
+    if normal is None:
+        normal = line
+        rich = f"&lt;h1 style='font-weight: normal;'&gt;{line}&lt;/h1&gt;"
+    else:
+        normal += f"\n{line}"
+        rich += f"\n&lt;h2 style='font-weight: normal;'&gt;{line}&lt;/h2&gt;"
+
+copy(normal, rich)</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string>week_schedule.py</string>
+				<key>type</key>
+				<integer>9</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.script</string>
+			<key>uid</key>
+			<string>5F7B4B9A-3E11-4AFB-B7CF-6F2DC1085A26</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>argumenttype</key>
+				<integer>1</integer>
+				<key>keyword</key>
+				<string>lastweek</string>
+				<key>subtext</key>
+				<string></string>
+				<key>text</key>
+				<string>Create Last Week Schedule</string>
+				<key>withspace</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.keyword</string>
+			<key>uid</key>
+			<string>1F226EB1-9906-4763-8A40-0CCCF3B903C2</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>argument</key>
+				<string>last</string>
+				<key>passthroughargument</key>
+				<false/>
+				<key>variables</key>
+				<dict/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.utility.argument</string>
+			<key>uid</key>
+			<string>BC63B914-E95E-466E-99C6-2973C00B3891</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>argumenttype</key>
+				<integer>1</integer>
+				<key>keyword</key>
+				<string>nextweek</string>
+				<key>subtext</key>
+				<string></string>
+				<key>text</key>
+				<string>Create Next Week Schedule</string>
+				<key>withspace</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.keyword</string>
+			<key>uid</key>
+			<string>49696EE5-7229-4844-A1D1-7364A4792561</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>argument</key>
+				<string>next</string>
+				<key>passthroughargument</key>
+				<false/>
+				<key>variables</key>
+				<dict/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.utility.argument</string>
+			<key>uid</key>
+			<string>A54A4278-C584-4074-A2B1-1D1C092D7147</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+	</array>
+	<key>readme</key>
+	<string></string>
+	<key>uidata</key>
+	<dict>
+		<key>123CBEDB-FD84-4A54-BFDD-1FADA19FD1D2</key>
+		<dict>
+			<key>xpos</key>
+			<real>75</real>
+			<key>ypos</key>
+			<real>180</real>
+		</dict>
+		<key>1F226EB1-9906-4763-8A40-0CCCF3B903C2</key>
+		<dict>
+			<key>xpos</key>
+			<real>70</real>
+			<key>ypos</key>
+			<real>320</real>
+		</dict>
+		<key>49696EE5-7229-4844-A1D1-7364A4792561</key>
+		<dict>
+			<key>xpos</key>
+			<real>70</real>
+			<key>ypos</key>
+			<real>460</real>
+		</dict>
+		<key>5F7B4B9A-3E11-4AFB-B7CF-6F2DC1085A26</key>
+		<dict>
+			<key>xpos</key>
+			<real>410</real>
+			<key>ypos</key>
+			<real>180</real>
+		</dict>
+		<key>A54A4278-C584-4074-A2B1-1D1C092D7147</key>
+		<dict>
+			<key>xpos</key>
+			<real>260</real>
+			<key>ypos</key>
+			<real>490</real>
+		</dict>
+		<key>BC63B914-E95E-466E-99C6-2973C00B3891</key>
+		<dict>
+			<key>xpos</key>
+			<real>260</real>
+			<key>ypos</key>
+			<real>350</real>
+		</dict>
+	</dict>
+	<key>userconfigurationconfig</key>
+	<array/>
+	<key>variablesdontexport</key>
+	<array/>
+	<key>version</key>
+	<string>1.0.0</string>
+	<key>webaddress</key>
+	<string>https://github.com/y-muen/alfred-week-schedule</string>
+</dict>
+</plist>
